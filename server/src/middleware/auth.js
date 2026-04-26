@@ -12,10 +12,13 @@ export const signAuthToken = (user) => {
   });
 };
 
+const isProduction = env.nodeEnv === "production";
+const sameSite = isProduction ? "none" : "lax";
+
 export const authCookieOptions = {
   httpOnly: true,
-  sameSite: "lax",
-  secure: env.nodeEnv === "production",
+  sameSite,
+  secure: isProduction,
   maxAge: 10 * 24 * 60 * 60 * 1000,
 };
 
@@ -26,8 +29,8 @@ export const setAuthCookie = (res, token) => {
 export const clearAuthCookie = (res) => {
   res.clearCookie(env.cookieName, {
     httpOnly: true,
-    sameSite: "lax",
-    secure: env.nodeEnv === "production",
+    sameSite,
+    secure: isProduction,
   });
 };
 
