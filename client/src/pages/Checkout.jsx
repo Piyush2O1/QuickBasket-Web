@@ -22,6 +22,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { api, getErrorMessage } from "../api/http.js";
 import CheckoutMap from "../components/CheckoutMap.jsx";
+import { trackPulseIq } from "../lib/pulseiq.js";
 import { clearCart } from "../store/cartSlice.js";
 
 const defaultMapPosition = [28.6139, 77.209];
@@ -76,6 +77,7 @@ export default function Checkout() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const items = useSelector((state) => state.cart.items);
+  const user = useSelector((state) => state.auth.user);
   const total = items.reduce((sum, item) => sum + Number(item.price || 0) * item.quantity, 0);
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [mapPosition, setMapPosition] = useState(defaultMapPosition);
@@ -283,6 +285,17 @@ export default function Checkout() {
     setError("");
     setSubmitting(true);
 
+    trackPulseIq("checkout_submit", {
+      userId: user?.id,
+      properties: {
+        paymentMethod,
+        itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
+        subtotal: total,
+        total: finalTotal,
+        couponCode: appliedCoupon?.code,
+      },
+    });
+
     try {
       if (paymentMethod === "online" && !stripeEnabled) {
         throw new Error("Online payment is not configured yet. Please use Cash on Delivery.");
@@ -312,6 +325,16 @@ export default function Checkout() {
       }
 
       setSuccessOrder(data.order);
+      trackPulseIq("purchase", {
+        userId: user?.id,
+        properties: {
+          orderId: data.order._id,
+          paymentMethod,
+          amount: data.order.totalAmount,
+          itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
+          couponCode: appliedCoupon?.code,
+        },
+      });
       dispatch(clearCart());
     } catch (err) {
       setError(getErrorMessage(err));

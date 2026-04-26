@@ -6,6 +6,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import BrandMark from "../components/BrandMark.jsx";
 import GoogleAuthButton from "../components/GoogleAuthButton.jsx";
 import { getPostAuthPath } from "../lib/appRoutes.js";
+import { trackPulseIq } from "../lib/pulseiq.js";
 import { clearAuthError, loginUser, loginWithGoogle } from "../store/authSlice.js";
 
 const loginRoles = [
@@ -28,6 +29,10 @@ export default function Login() {
 
   const handleGoogleCredential = useCallback(
     async (credential) => {
+      trackPulseIq("login_submit", {
+        properties: { role: form.role, method: "google" },
+      });
+
       const result = await dispatch(loginWithGoogle({ credential, role: form.role, mode: "login" }));
       if (result.meta.requestStatus === "fulfilled") {
         navigate(location.state?.from || getPostAuthPath(result.payload), { replace: true });
@@ -38,6 +43,10 @@ export default function Login() {
 
   const submit = async (event) => {
     event.preventDefault();
+    trackPulseIq("login_submit", {
+      properties: { role: form.role, method: "password" },
+    });
+
     const result = await dispatch(loginUser({ ...form, email: form.email.trim().toLowerCase() }));
     if (result.meta.requestStatus === "fulfilled") {
       navigate(location.state?.from || getPostAuthPath(result.payload), { replace: true });
@@ -187,7 +196,12 @@ export default function Login() {
 
           <p
             className="mt-6 flex cursor-pointer items-center justify-center gap-2 text-sm text-slate-600 lg:justify-start"
-            onClick={() => navigate("/register")}
+            onClick={() => {
+              trackPulseIq("signup_click", {
+                properties: { source: "login" },
+              });
+              navigate("/register");
+            }}
           >
             Need a new account?
             <LogIn className="h-4 w-4 text-emerald-700" />

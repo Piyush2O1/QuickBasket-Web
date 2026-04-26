@@ -25,6 +25,10 @@ export const env = {
   cloudinaryApiSecret: process.env.CLOUDINARY_API_SECRET,
   stripeSecretKey: process.env.STRIPE_SECRET_KEY,
   stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+  pulseiqApiKey: process.env.PULSEIQ_API_KEY,
+  pulseiqProjectId: process.env.PULSEIQ_PROJECT_ID || "69ee438f5451251bff0e55e3",
+  pulseiqEndpoint:
+    process.env.PULSEIQ_ENDPOINT || "https://pulseiq-ffio.onrender.com/api/ingest/event",
   geminiApiKey: process.env.GEMINI_API_KEY,
   googleClientId: process.env.GOOGLE_CLIENT_ID,
   email: process.env.EMAIL,

@@ -11,6 +11,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { badRequest, forbidden, notFound } from "../utils/httpError.js";
 import { canAccessOrder } from "../utils/orderAccess.js";
 import { buildPagination, getPagination } from "../utils/pagination.js";
+import { track } from "../utils/pulseiq.js";
 
 const locationChangeOtpExpiryMs = 10 * 60 * 1000;
 
@@ -124,6 +125,14 @@ export const createOrder = asyncHandler(async (req, res) => {
   if (paymentMethod === "cod") {
     await emitToRoles(io, ["admin"], "new-order", populatedOrder);
   }
+
+  await track("order_created", req.user._id, {
+    orderId: order._id.toString(),
+    paymentMethod,
+    totalAmount: pricing.totalAmount,
+    itemCount: normalizedItems.reduce((sum, item) => sum + item.quantity, 0),
+    couponCode: pricing.coupon?.code,
+  });
 
   res.status(201).json({ order: populatedOrder });
 });

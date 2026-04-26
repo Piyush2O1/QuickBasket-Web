@@ -1,10 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import NavBar from "./components/NavBar.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import { disconnectSocket, getSocket } from "./api/socket.js";
 import { getPostAuthPath } from "./lib/appRoutes.js";
+import { identifyPulseIq, trackPageView } from "./lib/pulseiq.js";
 import AddGrocery from "./pages/AddGrocery.jsx";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
 import AdminGroceries from "./pages/AdminGroceries.jsx";
@@ -28,7 +29,9 @@ import { syncCartOwner } from "./store/cartSlice.js";
 export default function App() {
   const dispatch = useDispatch();
   const location = useLocation();
-  const { user } = useSelector((state) => state.auth);
+  const { user, status: authStatus } = useSelector((state) => state.auth);
+  const lastTrackedPageRef = useRef("");
+  const identifiedUserRef = useRef(null);
   const isAuthPage = location.pathname === "/login" || location.pathname === "/register";
   const isGuestLanding = location.pathname === "/" && !user;
   const hideNav = isAuthPage || isGuestLanding;
@@ -40,6 +43,28 @@ export default function App() {
   useEffect(() => {
     dispatch(syncCartOwner(user?.id));
   }, [dispatch, user?.id]);
+
+  useEffect(() => {
+    if (authStatus === "idle" || authStatus === "loading") return;
+
+    const pageKey = `${location.pathname}${location.search}${location.hash}`;
+    if (lastTrackedPageRef.current === pageKey) return;
+
+    lastTrackedPageRef.current = pageKey;
+    trackPageView(location, user);
+  }, [authStatus, location.hash, location.pathname, location.search, user]);
+
+  useEffect(() => {
+    if (!user?.id) {
+      identifiedUserRef.current = null;
+      return;
+    }
+
+    if (identifiedUserRef.current === user.id) return;
+
+    identifiedUserRef.current = user.id;
+    identifyPulseIq(user);
+  }, [user]);
 
   useEffect(() => {
     if (!user) {

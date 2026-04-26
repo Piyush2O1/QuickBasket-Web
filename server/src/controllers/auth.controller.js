@@ -7,6 +7,7 @@ import { badRequest, unauthorized } from "../utils/httpError.js";
 import { clearAuthCookie, setAuthCookie, signAuthToken } from "../middleware/auth.js";
 import { verifyGoogleCredential } from "../services/googleAuth.service.js";
 import { sendMail } from "../services/mail.service.js";
+import { track } from "../utils/pulseiq.js";
 
 const allowedSelfRoles = ["user", "deliveryBoy"];
 const loginRoles = ["user", "deliveryBoy", "admin"];
@@ -106,6 +107,12 @@ export const register = asyncHandler(async (req, res) => {
   const token = signAuthToken(user);
   setAuthCookie(res, token);
 
+  await track("user_registered", user._id, {
+    email: user.email,
+    role: user.role,
+    method: "password",
+  });
+
   res.status(201).json({ user: sanitizeUser(user) });
 });
 
@@ -142,6 +149,11 @@ export const login = asyncHandler(async (req, res) => {
   const token = signAuthToken(user);
   setAuthCookie(res, token);
 
+  await track("user_login", user._id, {
+    role: user.role,
+    method: "password",
+  });
+
   res.json({ user: sanitizeUser(user) });
 });
 
@@ -165,6 +177,7 @@ export const googleLogin = asyncHandler(async (req, res) => {
   const isRegisterMode = mode === "register";
   const selectedRole = allowedSelfRoles.includes(role) ? role : "user";
   const statusCode = user ? 200 : 201;
+  const isNewUser = !user;
 
   if (!user) {
     if (!isRegisterMode) {
@@ -202,6 +215,12 @@ export const googleLogin = asyncHandler(async (req, res) => {
 
   const token = signAuthToken(user);
   setAuthCookie(res, token);
+
+  await track(isNewUser ? "user_registered" : "user_login", user._id, {
+    email: user.email,
+    role: user.role,
+    method: "google",
+  });
 
   res.status(statusCode).json({ user: sanitizeUser(user) });
 });

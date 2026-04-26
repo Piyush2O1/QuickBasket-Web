@@ -16,6 +16,7 @@ import { useNavigate } from "react-router-dom";
 import BrandMark from "../components/BrandMark.jsx";
 import GoogleAuthButton from "../components/GoogleAuthButton.jsx";
 import { getPostAuthPath } from "../lib/appRoutes.js";
+import { trackPulseIq } from "../lib/pulseiq.js";
 import {
   clearAuthError,
   loginWithGoogle,
@@ -50,6 +51,10 @@ export default function Register() {
 
   const handleGoogleCredential = useCallback(
     async (credential) => {
+      trackPulseIq("register_submit", {
+        properties: { role: form.role, method: "google" },
+      });
+
       const result = await dispatch(loginWithGoogle({ credential, role: form.role, mode: "register" }));
       if (result.meta.requestStatus === "fulfilled") {
         navigate(getPostAuthPath(result.payload), { replace: true });
@@ -68,6 +73,10 @@ export default function Register() {
   const submit = async (event) => {
     event.preventDefault();
     if (validationMessage || !formValid) return;
+
+    trackPulseIq("register_submit", {
+      properties: { role: form.role, method: "password" },
+    });
 
     const result = await dispatch(
       registerUser({
@@ -208,7 +217,12 @@ export default function Register() {
 
           <p
             className="mt-6 flex cursor-pointer items-center justify-center gap-2 text-sm text-slate-600"
-            onClick={() => navigate("/login")}
+            onClick={() => {
+              trackPulseIq("login_click", {
+                properties: { source: "register" },
+              });
+              navigate("/login");
+            }}
           >
             Already have an account?
             <LogIn className="h-4 w-4 text-emerald-700" />

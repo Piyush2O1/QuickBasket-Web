@@ -4,6 +4,7 @@ import { emitToRoles, emitToUser } from "../socket/emit.js";
 import { getStripe } from "../services/stripe.service.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { badRequest, forbidden, notFound } from "../utils/httpError.js";
+import { track } from "../utils/pulseiq.js";
 
 const getOrderUserId = (order) => order.user?._id?.toString?.() || order.user?.toString?.();
 const getUserId = (user) => user?._id?.toString?.() || user?.id?.toString?.();
@@ -149,6 +150,12 @@ export const confirmPayment = asyncHandler(async (req, res) => {
   if (wasUnpaid) {
     const io = req.app.get("io");
     await emitToRoles(io, ["admin"], "new-order", order);
+    await track("payment_success", getOrderUserId(order), {
+      orderId: order._id.toString(),
+      amount: order.totalAmount,
+      paymentMethod: "online",
+      provider: "stripe",
+    });
   }
 
   res.json({ order });
@@ -201,6 +208,14 @@ export const confirmLocationExtraPayment = asyncHandler(async (req, res) => {
   await emitToRoles(io, ["admin"], "order-status-update", {
     orderId: order._id.toString(),
     status: order.status,
+  });
+
+  await track("payment_success", getOrderUserId(order), {
+    orderId: order._id.toString(),
+    amount: sessionAmount,
+    paymentMethod: "online",
+    paymentType: "location_extra",
+    provider: "stripe",
   });
 
   res.json({ order });
@@ -270,6 +285,13 @@ export const stripeWebhook = asyncHandler(async (req, res) => {
       if (order) {
         const io = req.app.get("io");
         await emitToRoles(io, ["admin"], "new-order", order);
+        await track("payment_success", getOrderUserId(order), {
+          orderId: order._id.toString(),
+          amount: order.totalAmount,
+          paymentMethod: "online",
+          provider: "stripe",
+          source: "webhook",
+        });
       }
     }
   }
