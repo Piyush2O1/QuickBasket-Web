@@ -6,7 +6,6 @@ export const deliveryBaseFee = 100;
 export const deliveryMaxFee = 150;
 export const deliveryIncludedKm = 5;
 export const deliveryPerKmFee = 10;
-export const deliveryMaxDistanceKm = 15;
 export const storeLocation = {
   latitude: 28.6139,
   longitude: 77.209,
@@ -71,10 +70,6 @@ export const getDeliveryFee = async (_subtotal, address = null) => {
   const currentStoreLocation = await getCurrentStoreLocation();
   const deliveryLocation = toDeliveryLocation(address);
   const distanceKm = getDistanceKm(currentStoreLocation, deliveryLocation);
-
-  if (isValidLatLng(deliveryLocation) && distanceKm > deliveryMaxDistanceKm) {
-    throw badRequest(`Delivery is available within ${deliveryMaxDistanceKm} km only`);
-  }
 
   const extraDistanceKm = Math.max(0, distanceKm - deliveryIncludedKm);
   const distanceFee = Math.ceil(extraDistanceKm) * deliveryPerKmFee;

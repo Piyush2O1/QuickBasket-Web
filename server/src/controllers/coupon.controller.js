@@ -4,7 +4,6 @@ import {
   couponMinOrderAmount,
   deliveryBaseFee,
   deliveryIncludedKm,
-  deliveryMaxDistanceKm,
   deliveryMaxFee,
   deliveryPerKmFee,
   normalizeCouponCode,
@@ -23,7 +22,6 @@ export const listCoupons = asyncHandler(async (_req, res) => {
       deliveryBaseFee,
       deliveryMaxFee,
       deliveryIncludedKm,
-      deliveryMaxDistanceKm,
       deliveryPerKmFee,
     },
   });

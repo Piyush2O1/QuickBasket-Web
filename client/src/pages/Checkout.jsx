@@ -17,7 +17,7 @@ import {
   User,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { api, getErrorMessage } from "../api/http.js";
@@ -30,7 +30,6 @@ const deliveryBaseFee = 100;
 const deliveryMaxFee = 150;
 const deliveryIncludedKm = 5;
 const deliveryPerKmFee = 10;
-const deliveryMaxDistanceKm = 15;
 
 const isValidLatLng = (location) =>
   location &&
@@ -66,12 +65,10 @@ const getDeliveryPricing = (address) => {
   const distanceKm = getDistanceKm(storeLocation, deliveryLocation);
   const extraDistanceKm = Math.max(0, distanceKm - deliveryIncludedKm);
   const distanceFee = Math.ceil(extraDistanceKm) * deliveryPerKmFee;
-  const isOutOfDeliveryArea = isValidLatLng(deliveryLocation) && distanceKm > deliveryMaxDistanceKm;
 
   return {
     deliveryFee: Math.min(deliveryMaxFee, deliveryBaseFee + distanceFee),
     distanceKm,
-    isOutOfDeliveryArea,
   };
 };
 
@@ -83,6 +80,7 @@ export default function Checkout() {
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [mapPosition, setMapPosition] = useState(defaultMapPosition);
   const [hasPickedLocation, setHasPickedLocation] = useState(false);
+  const hasPickedLocationRef = useRef(false);
   const [stripeEnabled, setStripeEnabled] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [couponLoading, setCouponLoading] = useState(false);
@@ -101,7 +99,7 @@ export default function Checkout() {
     latitude: "",
     longitude: "",
   });
-  const { deliveryFee, distanceKm, isOutOfDeliveryArea } = getDeliveryPricing(address);
+  const { deliveryFee, distanceKm } = getDeliveryPricing(address);
 
   useEffect(() => {
     if (items.length === 0 && !successOrder) navigate("/user/cart", { replace: true });
@@ -147,6 +145,7 @@ export default function Checkout() {
   const finalTotal = Math.max(0, total + deliveryFee - discountAmount);
 
   const setDeliveryPosition = ([latitude, longitude]) => {
+    hasPickedLocationRef.current = true;
     setMapPosition([latitude, longitude]);
     setHasPickedLocation(true);
     setAddress((current) => ({
@@ -155,6 +154,26 @@ export default function Checkout() {
       longitude: longitude.toFixed(6),
     }));
   };
+
+  useEffect(() => {
+    if (!navigator.geolocation || hasPickedLocationRef.current) return undefined;
+
+    let cancelled = false;
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        if (cancelled || hasPickedLocationRef.current) return;
+
+        setDeliveryPosition([position.coords.latitude, position.coords.longitude]);
+      },
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 },
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!hasPickedLocation) return undefined;
@@ -275,10 +294,6 @@ export default function Checkout() {
       if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
         throw new Error("Please select delivery location on the map.");
       }
-      if (isOutOfDeliveryArea) {
-        throw new Error(`Delivery is available within ${deliveryMaxDistanceKm} km only.`);
-      }
-
       const { data } = await api.post("/orders", {
         items,
         address: {
@@ -476,9 +491,8 @@ export default function Checkout() {
               <span className="font-semibold">Delivery Fee</span>
               <span className="font-semibold text-emerald-700">Rs. {deliveryFee}</span>
             </div>
-            <p className={`text-xs font-medium ${isOutOfDeliveryArea ? "text-red-600" : "text-slate-500"}`}>
-              Minimum Rs. {deliveryBaseFee}, maximum Rs. {deliveryMaxFee}; delivery area up to{" "}
-              {deliveryMaxDistanceKm} km
+            <p className="text-xs font-medium text-slate-500">
+              Minimum Rs. {deliveryBaseFee}, maximum Rs. {deliveryMaxFee}; delivery available anywhere
               {distanceKm > 0 ? ` (${distanceKm.toFixed(1)} km selected)` : ""}.
             </p>
             {appliedCoupon && (
@@ -504,7 +518,7 @@ export default function Checkout() {
 
           <button
             className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-slate-950 px-5 py-3 font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={submitting || isOutOfDeliveryArea}
+            disabled={submitting}
           >
             {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : paymentMethod === "cod" ? "Place Order" : "Pay & Place Order"}
           </button>
