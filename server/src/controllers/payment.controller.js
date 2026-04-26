@@ -5,7 +5,9 @@ import { getStripe } from "../services/stripe.service.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { badRequest, forbidden, notFound } from "../utils/httpError.js";
 
-const ownsOrder = (order, user) => order.user.toString() === user._id.toString();
+const getOrderUserId = (order) => order.user?._id?.toString?.() || order.user?.toString?.();
+const getUserId = (user) => user?._id?.toString?.() || user?.id?.toString?.();
+const ownsOrder = (order, user) => getOrderUserId(order) === getUserId(user);
 
 export const getPaymentConfig = asyncHandler(async (_req, res) => {
   res.json({
@@ -126,9 +128,6 @@ export const confirmPayment = asyncHandler(async (req, res) => {
   if (session.metadata?.orderId !== String(orderId)) {
     throw badRequest("Payment session does not match this order");
   }
-  if (session.metadata?.userId !== req.user._id.toString()) {
-    throw forbidden("You cannot confirm this payment");
-  }
   if (session.payment_status !== "paid") {
     throw badRequest("Payment is not completed");
   }
@@ -138,8 +137,8 @@ export const confirmPayment = asyncHandler(async (req, res) => {
   if (!order) {
     throw notFound("Order not found");
   }
-  if (!ownsOrder(order, req.user)) {
-    throw forbidden("You cannot confirm this payment");
+  if (session.metadata?.userId !== getOrderUserId(order)) {
+    throw badRequest("Payment session does not match this order");
   }
 
   const wasUnpaid = !order.isPaid;
@@ -171,9 +170,6 @@ export const confirmLocationExtraPayment = asyncHandler(async (req, res) => {
   if (session.metadata?.orderId !== String(orderId)) {
     throw badRequest("Payment session does not match this order");
   }
-  if (session.metadata?.userId !== req.user._id.toString()) {
-    throw forbidden("You cannot confirm this payment");
-  }
   if (session.payment_status !== "paid") {
     throw badRequest("Payment is not completed");
   }
@@ -183,8 +179,8 @@ export const confirmLocationExtraPayment = asyncHandler(async (req, res) => {
   if (!order) {
     throw notFound("Order not found");
   }
-  if (!ownsOrder(order, req.user)) {
-    throw forbidden("You cannot confirm this payment");
+  if (session.metadata?.userId !== getOrderUserId(order)) {
+    throw badRequest("Payment session does not match this order");
   }
 
   const amountDue = Number(order.locationExtraCharge?.amountDue || 0);
