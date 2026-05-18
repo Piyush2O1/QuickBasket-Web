@@ -82,7 +82,10 @@ export default function App() {
   return (
     <>
       {!hideNav && <NavBar />}
-      <div className={hideNav ? "" : "pt-28 sm:pt-32"}>
+      <div
+        style={hideNav ? undefined : { paddingTop: "var(--quickbasket-nav-height, 7rem)" }}
+        className={hideNav ? "" : ""}
+      >
         <Routes>
           <Route path="/" element={<Home />} />
           <Route

@@ -133,9 +133,32 @@ export default function NavBar() {
 
   if (!user) return null;
 
+  const outerRef = useRef(null);
+
+  useEffect(() => {
+    const node = outerRef.current;
+    if (!node) return;
+
+    const setNavHeight = () => {
+      // set a CSS variable that contains the nav height so pages can add padding
+      document.documentElement.style.setProperty(
+        "--quickbasket-nav-height",
+        `${node.offsetHeight}px`,
+      );
+    };
+
+    setNavHeight();
+    // update on resize to handle wrapping/zoom changes
+    window.addEventListener("resize", setNavHeight);
+    return () => window.removeEventListener("resize", setNavHeight);
+  }, []);
+
   return (
     <>
-      <div className="fixed left-1/2 top-4 z-50 w-[95%] max-w-7xl -translate-x-1/2">
+      <div
+        ref={outerRef}
+        className="fixed left-1/2 top-4 z-50 w-[95%] max-w-7xl -translate-x-1/2"
+      >
         <div className="glass-panel-strong flex min-h-20 items-center justify-between gap-3 rounded-[32px] px-4 py-3 sm:px-5 lg:px-7">
           <div className="flex items-center gap-3">
             <BrandMark href={dashboardPath} compact={user.role !== "user"} />

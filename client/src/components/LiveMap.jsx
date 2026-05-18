@@ -163,7 +163,7 @@ export default function LiveMap({ userLocation, deliveryLocation, deliveryBoyLoc
       : defaultCenter;
 
   return (
-    <div className="relative z-0 h-[500px] w-full overflow-hidden rounded-[26px] shadow">
+    <div className="relative z-0 h-[300px] sm:h-[420px] md:h-[480px] lg:h-[500px] w-full overflow-hidden rounded-[26px] shadow">
       <MapContainer center={center} zoom={13} scrollWheelZoom className="h-full w-full">
         <Recenter
           userLocation={userLocation}

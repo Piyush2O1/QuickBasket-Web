@@ -154,7 +154,7 @@ export default function TrackOrder() {
         Back to orders
       </Link>
 
-      <div className="mt-5 grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+      <div className="mt-5 grid gap-8 xl:grid-cols-[1.1fr_0.9fr]">
         <section className="space-y-6">
           <div className="glass-panel-strong rounded-[32px] p-6 sm:p-7">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -175,7 +175,7 @@ export default function TrackOrder() {
               </div>
             </div>
 
-            <div className="mt-6 grid gap-4 sm:grid-cols-3">
+            <div className="mt-6 grid gap-6 sm:grid-cols-3">
               {[
                 { label: "Items", value: order.items.length, icon: Package },
                 { label: "Total", value: `Rs. ${order.totalAmount}`, icon: Truck },
@@ -194,7 +194,7 @@ export default function TrackOrder() {
             </div>
           </div>
 
-          <div className="glass-panel-strong rounded-[32px] p-3 sm:p-4">
+          <div className="glass-panel-strong rounded-[32px] p-3 sm:p-4 overflow-hidden">
             <LiveMap userLocation={userLocation} deliveryLocation={deliveryLocation} />
           </div>
 
@@ -444,7 +444,7 @@ function LocationChangePanel({ order, setOrder, stripeEnabled }) {
         </div>
       ) : (
         <>
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
+          <div className="mt-5 grid gap-5 sm:grid-cols-2">
             <LocationField icon={User} placeholder="Full name" value={address.fullName || ""} onChange={update("fullName")} />
             <LocationField icon={Search} placeholder="Pincode" value={address.pincode || ""} onChange={update("pincode")} />
             <LocationField icon={Home} placeholder="City" value={address.city || ""} onChange={update("city")} />
